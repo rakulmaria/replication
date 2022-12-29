@@ -23,7 +23,7 @@ type Frontend struct {
 	acks    []*proto.Ack
 }
 
-var port = flag.Int("port", 0, "server port number") // create the port that recieves the port that the client wants to access to
+var port = flag.Int("port", 8081, "server port number") // create the port that recieves the port that the client wants to access to
 
 func main() {
 	//setting the log file
@@ -44,6 +44,7 @@ func main() {
 
 	go startFrontend(frontend)
 
+	// connects to the three servers on localport 5001, 5002 and 5003
 	for i := 0; i < 3; i++ {
 		conn, err := grpc.Dial("localhost:"+strconv.Itoa(5001+i), grpc.WithTransportCredentials(insecure.NewCredentials()))
 		log.Printf("Frontend connected to server at port: %v\n", 5001+i)
@@ -60,10 +61,9 @@ func main() {
 }
 
 func (f *Frontend) Deposit(ctx context.Context, bid *proto.Amount) (*proto.Ack, error) {
-	// boolean to check if the auction is closed
 	f.acks = make([]*proto.Ack, 0)
 
-	log.Printf("Client %d deposits %d to the account", bid.Id, bid.Amount)
+	log.Printf("Client %d tries to deposit %d to the account ", bid.Id, bid.Amount)
 
 	// for each server in the slice, we call the server's bid()
 	for index, s := range f.servers {
@@ -79,16 +79,21 @@ func (f *Frontend) Deposit(ctx context.Context, bid *proto.Amount) (*proto.Ack, 
 		}
 	}
 
-	ack, err := f.ValidateAcks()
+	res, err := f.ValidateAcks()
+	if res.GetAck() == "success" {
+		log.Printf("Client %d successfully deposited %d to the account ", bid.Id, bid.Amount)
+	} else {
+		log.Printf("Something went wrong - couldn't deposit %d to the account ", bid.Amount)
+	}
 
-	return ack, err
+	return res, err
 }
 
 func (f *Frontend) ValidateAcks() (*proto.Ack, error) {
 	var sCount = 0
 	var fCount = 0
 
-	// counts how many succesful, failed and exception bids there were in the servers
+	// counts how many succesful and failed there were in the servers
 	for i := 0; i < len(f.servers); i++ {
 		if f.acks[i].Ack == success {
 			sCount++
@@ -141,7 +146,7 @@ func (f *Frontend) GetBalance(ctx context.Context, in *proto.Empty) (*proto.Bala
 		}
 
 	}
-	log.Printf("The balance is", balance)
+	log.Printf("The balance is %d \n", balance)
 	return &proto.Balance{Balance: balance}, nil
 }
 

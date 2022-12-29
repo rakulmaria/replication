@@ -20,8 +20,8 @@ type Client struct {
 }
 
 var (
-	clientPort   = flag.Int("cPort", 0, "client port number")
-	frontendPort = flag.Int("fPort", 0, "frontend port number")
+	clientPort   = flag.Int("cPort", 8080, "client port number")
+	frontendPort = flag.Int("fPort", 8081, "frontend port number")
 )
 
 func main() {
@@ -48,25 +48,25 @@ func connectToFrontend(client *Client) {
 
 	for scanner.Scan() {
 
-		//this is the input of the client who want to make a bid or see the result of the auction
+		//this is the input of the client who want to deposit or get the balance in the account
 		input := scanner.Text()
 
-		// if the client's input is bid, scans the amount that the client tries to bid and calls the bid() in the frontend
-		// if the clietn's input is result, prints the highest bidder and highest bid
+		// if the client's input is deposit, scans the amount that the client tries to deposit and calls the bid() in the frontend
+		// if the clietn's input is balance, prints the balance in the account
 		// else prints invalid
-		if input == "put" {
+		if input == "deposit" {
 			scanner.Scan()
 			amountToPut, _ := strconv.ParseInt(scanner.Text(), 10, 0)
 			_, err := FrontendClient.Deposit(context.Background(), &proto.Amount{Amount: int32(amountToPut), Id: int32(client.id)})
 
 			if err != nil {
-				fmt.Printf("Something is wrong with the bank account")
+				fmt.Printf("Something is wrong with the bank account \n")
 			}
 		} else if input == "balance" {
 			balance, _ := FrontendClient.GetBalance(context.Background(), &proto.Empty{})
 			fmt.Printf("Balance is: %d \n", balance.Balance)
 		} else {
-			fmt.Println("Invalid")
+			fmt.Println("Invalid - can only read deposit or result")
 		}
 
 	}

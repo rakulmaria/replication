@@ -60,9 +60,11 @@ func startServer(server *Server) {
 
 }
 
-// the bid method in the server checks if the bid placed by the client is a succesful bid, failed bid or an exception
-// updates the highestBid and highestBidder value if the placed bid is a success
-// returns the Ack enum corresponding to the bid
+// the deposit method in the server sets the owner of the account to the first deposit made
+// checks that the amount is a valid amount
+// checks that it's the same owner that tries to access the account
+// updates the balance if the deposit was a success
+// returns the Ack enum corresponding to the bid (fail or success)
 func (s *Server) Deposit(ctx context.Context, amount *proto.Amount) (*proto.Ack, error) {
 	if s.owner == -1 {
 		s.owner = amount.Id
@@ -77,14 +79,12 @@ func (s *Server) Deposit(ctx context.Context, amount *proto.Amount) (*proto.Ack,
 	} else {
 		s.balance += amount.Amount
 		s.owner = amount.Id
-		log.Println("Money successfully added to the account")
+		log.Printf("Server %d: Money successfully added to the account", s.port)
 		return &proto.Ack{Ack: success}, nil
 	}
-
 }
 
 func (s *Server) GetBalance(ctx context.Context, in *proto.Empty) (*proto.Balance, error) {
-	log.Println("Balance in server was called")
 	return &proto.Balance{Balance: s.balance}, nil
 }
 
